@@ -69,7 +69,7 @@ class Database{
 	 */
 	public static function inst(){
 		// If an instance isn't already created, make one
-		if(!isset(self::$_instance)) self::$_instance = new Database();
+		if(!isset(self::$_instance)) self::$_instance = new self();
 
 		// Return the instance
 		return self::$_instance;
