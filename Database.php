@@ -15,7 +15,7 @@
 class Database{
 	/**
 	 * Private variables
-	 * @var PDO         $_pdo      The PDO object, or DBH (DataBase Handler)
+	 * @var PDO         $_pdo      The PDO $this, or DBH (DataBase Handler)
 	 * @var string      $_query    The prepared query
 	 * @var array       $_results  The results of the query
 	 * @var bool        $_error    Any errors occurred while connecting will go here
@@ -54,29 +54,33 @@ class Database{
 	 * Queries a string to the database
 	 * @param  string   $sql     The string to be executed
 	 * @param  array    $params  Optional parameters
-	 * @param  bool     $limit   An optional limit to the query
+	 * @param  bool|int $limit   An optional limit to the query
 	 * @return Database          The result
 	 */
 	private function _query($sql, array $params = array(), $limit = false){
 		// Set the error to false
-		static::$_error = false;
+		$this->_error = false;
 
 		// Add a limit of one to $sql if the argument is true
-		$sql .= ($limit) ? ' LIMIT 1' : '';
+		// $sql .= ($limit) ? ' LIMIT 1' : '';
+		if($limit > 0 && is_int($limit)){
+			$params[] = $limit;
+			$sql .= " LIMIT ?";
+		}
 
 		// Prepare the query
-		static::$_query = static::$_pdo->prepare($sql);
+		$this->_query = $this->_pdo->prepare($sql);
 
 		// If the query is successfull
-		if(static::$_query->execute($params)){
+		if($this->_query->execute($params)){
 			// Fetch the results of the query and put them in $_results
-			static::$_results = static::$_query->fetchAll(PDO::FETCH_OBJ);
+			$this->_results = $this->_query->fetchAll(PDO::FETCH_OBJ);
 
 			// Set the rowcount of the query to the variable
-			static::$_count = static::$_query->rowCount();
+			$this->_count = $this->_query->rowCount();
 		}else{
 			// Else set the error to true
-			static::$_error = true;
+			$this->_error = true;
 		}
 		// Return the statement
 		return $this;
@@ -86,10 +90,10 @@ class Database{
 	 * @since  1.0
 	 *
 	 * Get data from a table
-	 * @param  string  $table   The table to get data from
-	 * @param  string  $where   The condition, may only be one
-	 * @param  string  $what    The rows to select
-	 * @param  bool    $limit   An optional limit to the query
+	 * @param  string   $table   The table to get data from
+	 * @param  string   $where   The condition, may only be one
+	 * @param  string   $what    The rows to select
+	 * @param  bool|int $limit   An optional limit to the query
 	 * @return Database
 	 */
 	public function get($table, $where = '1 = 1', $what = '*', $limit = false){
@@ -113,7 +117,38 @@ class Database{
 		$sql = "SELECT {$what} FROM {$table} WHERE {$where}";
 
 		// Return the result of the query function
-		return static::$_query($sql, $params, $limit);
+		return $this->_query($sql, $params, $limit);
+	}
+
+	/**
+	 * Get values from a table with a regular expression
+	 * @param  string   $table The table
+	 * @param  string   $like  Column and regex, seperated by a comma
+	 * @param  string   $what  Rows to select
+	 * @param  bool|int $limit An optional limit
+	 * @return $this          The data object
+	 */
+	public function like($table, $like, $what = '*', $limit = false){
+		// Create an array from the where argument
+		$like = explode(', ', $like);
+
+		// Replace the usual wildcard with an SQL wildcard
+		$like[1] = str_replace('*', '%', $like[1]);
+
+		// Create an empty params array
+		$params = array();
+
+		// Add the variable part in where to the params array
+		$params[] = $like[1];
+
+		// Replace the variable part in where with a question mark
+		$like[1] = '?';
+
+		// Assemble the query from the variables
+		$sql = "SELECT {$what} FROM {$table} WHERE {$like[0]} LIKE {$like[1]}";
+
+		// Return the result of the query function
+		return $this->_query($sql, $params, $limit);
 	}
 
 	/**
@@ -152,7 +187,7 @@ class Database{
 		$sql = "UPDATE {$table} SET {$set} WHERE {$where}";
 
 		// Return the result of the query function
-		return static::$_query($sql, $params);
+		return $this->_query($sql, $params);
 	}
 
 	/**
@@ -177,7 +212,7 @@ class Database{
 		$sql = "INSERT INTO {$table} ({$keys}) VALUES ({$values})";
 
 		// Return the result of the query function
-		return static::$_query($sql, $params);
+		return $this->_query($sql, $params);
 	}
 
 	/**
@@ -212,7 +247,7 @@ class Database{
 		$sql = "DELETE FROM {$table} WHERE {$where}";
 
 		// Return the result of the query function
-		return static::$_query($sql, $params);
+		return $this->_query($sql, $params);
 	}
 
 	/**
@@ -223,7 +258,7 @@ class Database{
 	 */
 	public function result(){
 		// Return the private results array
-		return static::$_results;
+		return $this->_results;
 	}
 
 	/**
@@ -234,7 +269,7 @@ class Database{
 	 */
 	public function count(){
 		// Return the rowcount
-		return static::$_count;
+		return $this->_count;
 	}
 
 	/**
@@ -245,18 +280,19 @@ class Database{
 	 */
 	public function error(){
 		// Return the value of the private $_error
-		return static::$_error;
+		return $this->_error;
 	}
 
 	/**
 	 * @since  1.0
 	 *
 	 * Returns the first result
-	 * @return object    The first result
+	 * @return $this    The first result
 	 */
 	public function first(){
-		// Grab the first from the result array
-		return static::$_results[0];
+		// Grab the first from the result array if it exists
+		if($this->_results[0]) return $this->_results[0];
+		return;
 	}
 
 	/**
@@ -266,7 +302,7 @@ class Database{
 	 */
 	public function __destruct(){
 		// Assign null to $_pdo
-		static::$_pdo = null;
+		$this->_pdo = null;
 		return;
 	}
 }
