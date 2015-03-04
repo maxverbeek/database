@@ -216,18 +216,6 @@ class Database{
 	}
 
 	/**
-	 * Create, delete, or alter a table
-	 * @param  string   $action  The action (create, delete, alter)
-	 * @param  string   $name    The name of the table
-	 * @param  array    $columns The columns
-	 * @param  bool     $exists  If not exists
-	 * @return Database          The object
-	 */
-	public function table($action, $name, $columns, $exists){
-		//
-	}
-
-	/**
 	 * @since  1.0
 	 *
 	 * Give the results of the query
