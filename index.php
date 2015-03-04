@@ -12,13 +12,13 @@ require 'Database.php';
 //////////////////
 // INITIALIZING //
 //////////////////
-// Set the config variables
-Database::init(
+// Create a new instance
+$db = new Database(
 	'test',    // The name of the database
 	'root',        // The username
 	'root',        // The password
 	'127.0.0.1',   // The database host, optional
-	['']           // Options passed while connecting, optional
+	[]           // Options passed while connecting, optional
 );
 
 // Echo an open pre tag so the prints look fancy
@@ -35,7 +35,7 @@ echo '<pre>';
 //   * Limit the result
 // Return:
 //     Array with results
-$get = Database::inst()->get('users', 'username = Bill', 'password', true);
+$get = $db->get('users', 'username = Bill', 'password', true);
 
 // Fetch the results of the query
 // And print them
@@ -58,7 +58,7 @@ $data = [
 	'role' => 0
 ];
 
-$insert = Database::inst()->insert('users', $data);
+$insert = $db->insert('users', $data);
 var_dump($insert);
 
 ///////////////////
@@ -71,7 +71,7 @@ var_dump($insert);
 //   * The column and value to edit
 // Return:
 //     Bool status
-$update = Database::inst()->update('users', 'username = Steve', ['role' => 1]);
+$update = $db->update('users', 'username = Steve', ['role' => 1]);
 var_dump($update);
 
 ///////////////////
@@ -83,14 +83,14 @@ var_dump($update);
 //   * A conditon
 // Return:
 //     Bool status
-$delete = Database::inst()->delete('users', 'username = Steve');
+$delete = $db->delete('users', 'username = Steve');
 var_dump($delete);
 
 //////////
 // MISC //
 //////////
 // Select some data from the table for test purposes
-$test = Database::inst()->get('users');
+$test = $db->get('users');
 
 // Return the number of rows fetched
 var_dump($test->count());
