@@ -1,35 +1,21 @@
 <?php
 /**
+ * Database
+ * ============
+ * A simple class to connect to your MySQL database.
+ * The class uses prepared statements, so using it should be save.
+ *
  * @version    1.1
- * @author     Sibren Talens  <sibrentalens@gmail.com>
- * @copyright  2014-2015      Sibren Talens
- * @license    Apache license http://sibrentalens.com/license
- * @link       GitHub         https://github.com/SibrenTalens/database
+ * @author     Sibren Talens   <sibrentalens@gmail.com>
+ * @copyright  2014-2015       Sibren Talens
+ * @license    Apache license  http://license.sibrentalens.com
+ * @link       GitHub          https://github.com/SibrenTalens/database
+ * @see        PDO Manual      http://php.net/manual/en/class.pdo.php
  */
 class Database{
 	/**
-	 * @since  1.0
-	 *
-	 * Private static variables
-	 * @var Database  $_instance   Contains the instance of this class
-	 * @var string      $_dbname   The name of the database
-	 * @var string      $_username The username
-	 * @var string      $_password The password
-	 * @var string      $_host     The host, usually localhost
-	 * @var array       $_options  The options to use while connecting
-	 */
-	private static $_instance = null,
-	               $_dbname,
-	               $_username,
-	               $_password,
-	               $_host,
-	               $_options;
-
-	/**
-	 * @since  1.0
-	 *
 	 * Private variables
-	 * @var PDO         $_pdo      The PDO object, or DBH (DataBase Handler)
+	 * @var PDO         $_pdo      The PDO $this, or DBH (DataBase Handler)
 	 * @var string      $_query    The prepared query
 	 * @var array       $_results  The results of the query
 	 * @var bool        $_error    Any errors occurred while connecting will go here
@@ -42,53 +28,19 @@ class Database{
 	        $_count = 0;
 
 	/**
-	 * @since  1.0
+	 * @since 1.0
 	 *
-	 * Set the config variables
-	 * @param  string   $dbname     The name of the database
-	 * @param  string   $username   The username
-	 * @param  string   $password   The password
-	 * @param  string   $host       The host, usually localhost
-	 * @param  array    $options    Any options used while connecting
+	 * Construct the database
+	 * @param string    $dbname     The name of the database
+	 * @param string    $username   The username
+	 * @param string    $password   The password
+	 * @param string    $host       The host, default is localhost (127.0.0.1)
+	 * @param array     $options    An array with options, default is empty
 	 */
-	public static function init($dbname, $username, $password, $host = '127.0.0.1', array $options = array()){
-		// Set all the static variables to the ones provided as parameter
-		self::$_dbname = $dbname;
-		self::$_username = $username;
-		self::$_password = $password;
-		self::$_host = $host;
-		self::$_options = $options;
-		return;
-	}
-
-	/**
-	 * @since  1.0
-	 *
-	 * If available, returns an existing instance, else creates and returns one
-	 * @return Database           The instance of the class
-	 */
-	public static function inst(){
-		// If an instance isn't already created, make one
-		if(!isset(self::$_instance)) self::$_instance = new self();
-
-		// Return the instance
-		return self::$_instance;
-	}
-
-	/**
-	 * @since  1.0
-	 *
-	 * Construct the database with data given in the init() function
-	 */
-	private function __construct(){
+	public function __construct($dbname, $username, $password, $host = '127.0.0.1', $options = []){
 		try{
 			// Attempt to connect to the database
-			$this->_pdo = new PDO(
-				'mysql:host='.self::$_host.';dbname='.self::$_dbname,
-				self::$_username,
-				self::$_password,
-				self::$_options
-			);
+			$this->_pdo = new PDO('mysql:host='.$host.';dbname='.$dbname, $username, $password, $options);
 		}catch(PDOException $e){
 			// Kill the script and produce an error
 			die($e->getMessage());
@@ -102,7 +54,7 @@ class Database{
 	 * Queries a string to the database
 	 * @param  string   $sql     The string to be executed
 	 * @param  array    $params  Optional parameters
-	 * @param  bool     $limit   An optional limit to the query
+	 * @param  bool|int $limit   An optional limit to the query
 	 * @return Database          The result
 	 */
 	private function _query($sql, array $params = array(), $limit = false){
@@ -110,7 +62,11 @@ class Database{
 		$this->_error = false;
 
 		// Add a limit of one to $sql if the argument is true
-		$sql .= ($limit) ? ' LIMIT 1' : '';
+		// $sql .= ($limit) ? ' LIMIT 1' : '';
+		if($limit > 0 && is_int($limit)){
+			$params[] = $limit;
+			$sql .= " LIMIT ?";
+		}
 
 		// Prepare the query
 		$this->_query = $this->_pdo->prepare($sql);
@@ -134,13 +90,13 @@ class Database{
 	 * @since  1.0
 	 *
 	 * Get data from a table
-	 * @param  string  $table   The table to get data from
-	 * @param  string  $where   The condition, may only be one
-	 * @param  string  $what    The rows to select
-	 * @param  bool    $limit   An optional limit to the query
+	 * @param  string   $table   The table to get data from
+	 * @param  string   $where   The condition, may only be one
+	 * @param  string   $what    The rows to select
+	 * @param  bool|int $limit   An optional limit to the query
 	 * @return Database
 	 */
-	public function get($table, $where = '1 = 1', $what = "*", $limit = false){
+	public function get($table, $where = '1 = 1', $what = '*', $limit = false){
 		// Create an array from the where argument
 		$where = explode(' ', $where);
 
@@ -155,10 +111,41 @@ class Database{
 
 		// Create a string from the condition
 		// with the variable replaced by a question mark
-		$where = implode(" ", $where);
+		$where = implode(' ', $where);
 
 		// Assemble the query from the variables
-		$sql = "SELECT {$what} FROM {$table} WHERE {$where}";
+		$sql = "SELECT {$what} FROM `{$table}` WHERE {$where}";
+
+		// Return the result of the query function
+		return $this->_query($sql, $params, $limit);
+	}
+
+	/**
+	 * Get values from a table with a regular expression
+	 * @param  string   $table The table
+	 * @param  string   $like  Column and regex, seperated by a comma
+	 * @param  string   $what  Rows to select
+	 * @param  bool|int $limit An optional limit
+	 * @return $this          The data object
+	 */
+	public function like($table, $like, $what = '*', $limit = false){
+		// Create an array from the where argument
+		$like = explode(', ', $like);
+
+		// Replace the usual wildcard with an SQL wildcard
+		$like[1] = str_replace('*', '%', $like[1]);
+
+		// Create an empty params array
+		$params = array();
+
+		// Add the variable part in where to the params array
+		$params[] = $like[1];
+
+		// Replace the variable part in where with a question mark
+		$like[1] = '?';
+
+		// Assemble the query from the variables
+		$sql = "SELECT {$what} FROM `{$table}` WHERE {$like[0]} LIKE {$like[1]}";
 
 		// Return the result of the query function
 		return $this->_query($sql, $params, $limit);
@@ -181,7 +168,7 @@ class Database{
 		$where = explode(' ', $where);
 
 		// Create $set from the array keys given in the argument $values
-		$set = implode(' = ?, ', array_keys($values))." = ?";
+		$set = implode(' = ?, ', array_keys($values)).' = ?';
 
 		// Grab the values of the $params argument
 		$params = array_values($values);
@@ -197,7 +184,7 @@ class Database{
 		$where = implode(' ', $where);
 
 		// Assemble the query from the variables
-		$sql = "UPDATE {$table} SET {$set} WHERE {$where}";
+		$sql = "UPDATE `{$table}` SET {$set} WHERE {$where}";
 
 		// Return the result of the query function
 		return $this->_query($sql, $params);
@@ -222,7 +209,7 @@ class Database{
 		$params = array_values($data);
 
 		// Assemble the query from the variables
-		$sql = "INSERT INTO {$table} ({$keys}) VALUES ({$values})";
+		$sql = "INSERT INTO `{$table}` ({$keys}) VALUES ({$values})";
 
 		// Return the result of the query function
 		return $this->_query($sql, $params);
@@ -238,7 +225,7 @@ class Database{
 	 */
 	public function delete($table, $where){
 		// If a number is given, add 'id = ' to the condition
-		if(is_numeric($where)) $where = "id = {$where}";
+		if(is_numeric($where)) $where = 'id = {$where}';
 
 		// Create an array from the where argument
 		$where = explode(' ', $where);
@@ -257,7 +244,7 @@ class Database{
 		$where = implode(' ', $where);
 
 		// Assemble the query from the variables
-		$sql = "DELETE FROM {$table} WHERE {$where}";
+		$sql = "DELETE FROM `{$table}` WHERE {$where}";
 
 		// Return the result of the query function
 		return $this->_query($sql, $params);
@@ -300,11 +287,12 @@ class Database{
 	 * @since  1.0
 	 *
 	 * Returns the first result
-	 * @return object    The first result
+	 * @return $this    The first result
 	 */
 	public function first(){
-		// Grab the first from the result array
-		return $this->_results[0];
+		// Grab the first from the result array if it exists
+		if($this->_results[0]) return $this->_results[0];
+		return;
 	}
 
 	/**
