@@ -14,11 +14,11 @@ require 'Database.php';
 //////////////////
 // Create a new instance
 $db = new Database(
-	'test',    // The name of the database
+	'test',        // The name of the database
 	'root',        // The username
 	'root',        // The password
 	'127.0.0.1',   // The database host, optional
-	[]           // Options passed while connecting, optional
+	[]             // Options passed while connecting, optional
 );
 
 // Echo an open pre tag so the prints look fancy

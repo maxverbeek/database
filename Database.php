@@ -114,7 +114,7 @@ class Database{
 		$where = implode(' ', $where);
 
 		// Assemble the query from the variables
-		$sql = "SELECT {$what} FROM {$table} WHERE {$where}";
+		$sql = "SELECT {$what} FROM `{$table}` WHERE {$where}";
 
 		// Return the result of the query function
 		return $this->_query($sql, $params, $limit);
@@ -145,7 +145,7 @@ class Database{
 		$like[1] = '?';
 
 		// Assemble the query from the variables
-		$sql = "SELECT {$what} FROM {$table} WHERE {$like[0]} LIKE {$like[1]}";
+		$sql = "SELECT {$what} FROM `{$table}` WHERE {$like[0]} LIKE {$like[1]}";
 
 		// Return the result of the query function
 		return $this->_query($sql, $params, $limit);
@@ -184,7 +184,7 @@ class Database{
 		$where = implode(' ', $where);
 
 		// Assemble the query from the variables
-		$sql = "UPDATE {$table} SET {$set} WHERE {$where}";
+		$sql = "UPDATE `{$table}` SET {$set} WHERE {$where}";
 
 		// Return the result of the query function
 		return $this->_query($sql, $params);
@@ -209,7 +209,7 @@ class Database{
 		$params = array_values($data);
 
 		// Assemble the query from the variables
-		$sql = "INSERT INTO {$table} ({$keys}) VALUES ({$values})";
+		$sql = "INSERT INTO `{$table}` ({$keys}) VALUES ({$values})";
 
 		// Return the result of the query function
 		return $this->_query($sql, $params);
@@ -244,7 +244,7 @@ class Database{
 		$where = implode(' ', $where);
 
 		// Assemble the query from the variables
-		$sql = "DELETE FROM {$table} WHERE {$where}";
+		$sql = "DELETE FROM `{$table}` WHERE {$where}";
 
 		// Return the result of the query function
 		return $this->_query($sql, $params);
